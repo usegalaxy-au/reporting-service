@@ -4,7 +4,6 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 from typing import Callable, Optional
 
 from sqlalchemy import create_engine
@@ -12,7 +11,7 @@ from sqlalchemy import create_engine
 from common.domains import load_domain_map
 from common.influx import write_to_influxdb
 from common.s3 import S3Storage
-from common.state import load_ingested_keys, mark_ingested
+from common import state
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +23,15 @@ class Report:
     name: str
     s3_prefix_env: str
     measurement: str
-    state_dir: Path
     parse_record: Callable[[dict], Optional[dict]]
     build_points: Callable[..., list[str]]
 
 
 def run(report: Report, start_date: date, end_date: date, dry: bool) -> None:
     s3 = S3Storage(prefix=os.environ[report.s3_prefix_env])
-    ingested = load_ingested_keys(report.state_dir, start_date, end_date)
-    domain_map = load_domain_map(report.state_dir / 'domains.json')
+    state_dir = state.get_dir(report.name)
+    ingested = state.load_ingested_keys(state_dir, start_date, end_date)
+    domain_map = load_domain_map(state_dir / 'domains.json')
     engine = create_engine(os.environ['GALAXY_DATABASE_URL'])
 
     with engine.connect() as conn:
@@ -61,7 +60,7 @@ def run(report: Report, start_date: date, end_date: date, dry: bool) -> None:
                         print(line)
                 else:
                     write_to_influxdb(data_points)
-                    mark_ingested(report.state_dir, s3, key)
+                    state.mark_ingested(state_dir, s3, key)
             else:
                 logger.warning(
                     "No matching records found in %s — "

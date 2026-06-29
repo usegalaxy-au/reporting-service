@@ -1,11 +1,18 @@
 """Persistent per-report state: which S3 keys have already been ingested.
 
-State files are named YYYY-MM and contain one ingested S3 key per line.
-Each report gets its own state directory so dedup is independent.
+Each report writes to its own subdirectory under STATE_DIR
+(`state/<report_name>/YYYY-MM`), with one ingested S3 key per line.
 """
 
 from datetime import date, timedelta
 from pathlib import Path
+
+STATE_DIR = Path(__file__).parent.parent / 'state'
+
+
+def get_dir(report_name: str) -> Path:
+    """Return the on-disk state directory for a report."""
+    return STATE_DIR / report_name
 
 
 def load_ingested_keys(

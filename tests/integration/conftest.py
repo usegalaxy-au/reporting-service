@@ -169,11 +169,13 @@ def captured_writes(monkeypatch):
 
 @pytest.fixture()
 def temp_state_dir(tmp_path, monkeypatch):
-    """Per-test state dir, swapped into reports.tools.REPORT."""
+    """Per-test STATE_DIR root; yields the report's subdir for assertions."""
     from reports import tools as tools_report
-    state_dir = tmp_path / 'state'
-    state_dir.mkdir()
-    monkeypatch.setattr(tools_report.REPORT, 'state_dir', state_dir)
-    yield state_dir
-    if state_dir.exists():
-        shutil.rmtree(state_dir, ignore_errors=True)
+    from common import state
+    root = tmp_path / 'state'
+    root.mkdir()
+    monkeypatch.setattr(state, 'STATE_DIR', root)
+    report_dir = root / tools_report.REPORT.name
+    yield report_dir
+    if root.exists():
+        shutil.rmtree(root, ignore_errors=True)

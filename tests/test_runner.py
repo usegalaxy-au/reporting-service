@@ -36,15 +36,14 @@ class FakeS3:
         raise KeyError(key)
 
 
-def make_report(state_dir, fake_s3, parse=None, build=None):
-    """Build a Report wired to a fake S3 and recorded callbacks."""
+def make_report(parse=None, build=None):
+    """Build a Report with recorded callbacks."""
     parse = parse or (lambda r: r if r else None)
     build = build or (lambda **kw: ['line:' + str(kw['parsed'])])
     return runner.Report(
         name='test',
         s3_prefix_env='TEST_S3_PREFIX',
         measurement='m',
-        state_dir=state_dir,
         parse_record=parse,
         build_points=build,
     )
@@ -56,7 +55,6 @@ class ReportDataclassTests(unittest.TestCase):
             name='x',
             s3_prefix_env='X_PREFIX',
             measurement='m',
-            state_dir=Path('/tmp/x'),
             parse_record=lambda r: None,
             build_points=lambda **kw: [],
         )
@@ -68,7 +66,12 @@ class RunTests(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self.state_dir = Path(self._tmp.name)
+        # STATE_DIR/<report.name> -> tmp/test
+        self.state_dir = Path(self._tmp.name) / 'test'
+        self.state_patch = mock.patch(
+            'common.state.STATE_DIR', Path(self._tmp.name))
+        self.state_patch.start()
+        self.addCleanup(self.state_patch.stop)
 
         self.env_patch = mock.patch.dict(
             'os.environ',
@@ -102,7 +105,7 @@ class RunTests(unittest.TestCase):
 
     def _run_with(self, fake_s3, dry=False, **kw):
         with mock.patch('common.runner.S3Storage', return_value=fake_s3):
-            report = make_report(self.state_dir, fake_s3, **kw)
+            report = make_report(**kw)
             runner.run(
                 report,
                 start_date=date(2026, 6, 29),
@@ -128,6 +131,7 @@ class RunTests(unittest.TestCase):
         )
 
     def test_skips_already_ingested_keys(self):
+        self.state_dir.mkdir(parents=True, exist_ok=True)
         (self.state_dir / '2026-06').write_text('k1\n')
         read_calls = []
 

@@ -12,7 +12,6 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from pathlib import Path
 
 from Crypto.Cipher import Blowfish
 from sqlalchemy import text
@@ -176,7 +175,6 @@ REPORT = Report(
     name='workflows',
     s3_prefix_env='S3_PREFIX_WORKFLOW_INVOCATIONS',
     measurement='workflow_invocation',
-    state_dir=Path(__file__).parent.parent / 'state' / 'workflows',
     parse_record=parse_record,
     build_points=build_points,
 )
