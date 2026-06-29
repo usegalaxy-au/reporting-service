@@ -137,7 +137,7 @@ REPORT = Report(
     name='tools',
     s3_prefix_env='S3_PREFIX_TOOL_RUNS',
     measurement='tool_runs',
-    state_dir=Path(__file__).parent.parent / 'tools' / 'state',
+    state_dir=Path(__file__).parent.parent / 'state' / 'tools',
     parse_record=parse_record,
     build_points=build_points,
 )
