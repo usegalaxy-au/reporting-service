@@ -35,6 +35,8 @@ def pg_url():
     """Boot Postgres, load schema + fixtures, return SQLAlchemy URL."""
     users_tsv = DB_FIXTURES_DIR / 'users.tsv'
     jobs_tsv = DB_FIXTURES_DIR / 'jobs.tsv'
+    workflows_tsv = DB_FIXTURES_DIR / 'workflows.tsv'
+    stored_workflows_tsv = DB_FIXTURES_DIR / 'stored_workflows.tsv'
     if not (users_tsv.exists() and jobs_tsv.exists()):
         pytest.skip(
             f"DB fixtures not found at {DB_FIXTURES_DIR} "
@@ -76,6 +78,24 @@ def pg_url():
                         '2026-06-25 23:59:30',
                     ),
                 )
+                if workflows_tsv.exists() and stored_workflows_tsv.exists():
+                    # Postgres round-trips bytea CSV as \x<hex> literals,
+                    # so loading straight into a bytea column works.
+                    with workflows_tsv.open() as f:
+                        cur.copy_expert(
+                            "COPY workflow (id, uuid, source_metadata) "
+                            "FROM STDIN WITH (FORMAT csv, HEADER, "
+                            "DELIMITER E'\\t')",
+                            f,
+                        )
+                    with stored_workflows_tsv.open() as f:
+                        cur.copy_expert(
+                            "COPY stored_workflow "
+                            "(id, name, user_id, latest_workflow_id) "
+                            "FROM STDIN WITH (FORMAT csv, HEADER, "
+                            "DELIMITER E'\\t')",
+                            f,
+                        )
             conn.commit()
 
         yield url
@@ -97,6 +117,15 @@ def db_conn(pg_url):
     engine.dispose()
 
 
+def _snapshot_s3(prefix_env):
+    from common.s3 import S3Storage
+    s3 = S3Storage(prefix=os.environ[prefix_env])
+    snapshot = []
+    for key in s3.iter_keys(PINNED_DATE, PINNED_DATE):
+        snapshot.append((key, list(s3.read_records(key))))
+    return snapshot
+
+
 @pytest.fixture(scope='session')
 def s3_records():
     """One-time fetch of all records for PINNED_DATE; list of (key, records).
@@ -104,15 +133,25 @@ def s3_records():
     Tests stream from this snapshot via FakeS3 rather than re-hitting S3.
     Skips the whole integration suite if cleanup has swept the day.
     """
-    from common.s3 import S3Storage
-    s3 = S3Storage(prefix=os.environ['S3_PREFIX_TOOL_RUNS'])
-    snapshot = []
-    for key in s3.iter_keys(PINNED_DATE, PINNED_DATE):
-        snapshot.append((key, list(s3.read_records(key))))
+    snapshot = _snapshot_s3('S3_PREFIX_TOOL_RUNS')
     if not snapshot:
         pytest.skip(
             f"No S3 keys for {PINNED_DATE} under "
             f"{os.environ['S3_PREFIX_TOOL_RUNS']}"
+        )
+    return snapshot
+
+
+@pytest.fixture(scope='session')
+def s3_workflow_records():
+    """One-time fetch of workflow-invocation records for PINNED_DATE."""
+    if not os.environ.get('GALAXY_ID_SECRET'):
+        pytest.skip('GALAXY_ID_SECRET not set; needed to decode workflow ids')
+    snapshot = _snapshot_s3('S3_PREFIX_WORKFLOW_INVOCATIONS')
+    if not snapshot:
+        pytest.skip(
+            f"No S3 keys for {PINNED_DATE} under "
+            f"{os.environ['S3_PREFIX_WORKFLOW_INVOCATIONS']}"
         )
     return snapshot
 
@@ -157,6 +196,18 @@ def fake_s3(s3_records, monkeypatch):
 
 
 @pytest.fixture()
+def fake_s3_workflows(s3_workflow_records, monkeypatch):
+    """Patch runner.S3Storage to replay the workflow-invocation snapshot."""
+    fake = FakeS3(
+        s3_workflow_records,
+        prefix=os.environ['S3_PREFIX_WORKFLOW_INVOCATIONS'],
+    )
+    monkeypatch.setattr(
+        'common.runner.S3Storage', lambda prefix=None: fake)
+    yield fake
+
+
+@pytest.fixture()
 def captured_writes(monkeypatch):
     """Replace write_to_influxdb with a list-append; yield the list."""
     captured = []
@@ -167,15 +218,32 @@ def captured_writes(monkeypatch):
     return captured
 
 
-@pytest.fixture()
-def temp_state_dir(tmp_path, monkeypatch):
-    """Per-test STATE_DIR root; yields the report's subdir for assertions."""
-    from reports import tools as tools_report
+def _make_temp_state_dir(tmp_path, monkeypatch, report_name):
     from common import state
     root = tmp_path / 'state'
     root.mkdir()
     monkeypatch.setattr(state, 'STATE_DIR', root)
-    report_dir = root / tools_report.REPORT.name
+    report_dir = root / report_name
+    return root, report_dir
+
+
+@pytest.fixture()
+def temp_state_dir(tmp_path, monkeypatch):
+    """Per-test STATE_DIR root; yields the tools-report subdir."""
+    from reports import tools as tools_report
+    root, report_dir = _make_temp_state_dir(
+        tmp_path, monkeypatch, tools_report.REPORT.name)
+    yield report_dir
+    if root.exists():
+        shutil.rmtree(root, ignore_errors=True)
+
+
+@pytest.fixture()
+def temp_state_dir_workflows(tmp_path, monkeypatch):
+    """Per-test STATE_DIR root; yields the workflows-report subdir."""
+    from reports import workflows as workflows_report
+    root, report_dir = _make_temp_state_dir(
+        tmp_path, monkeypatch, workflows_report.REPORT.name)
     yield report_dir
     if root.exists():
         shutil.rmtree(root, ignore_errors=True)

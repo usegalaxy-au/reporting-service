@@ -1,0 +1,8 @@
+id	name	user_id	latest_workflow_id
+79640	BAM to FASTQ + QC v1.0	39461	135141
+79658	PacBio HiFi genome assembly using hifiasm v2.1	39461	135159
+80072	Galaxy-Workflow-Genome_assessment_post_assembly	39461	135590
+80073	gfastats_data_prep	39461	135591
+80074	TSI-Scaffolding-with-HiC	39461	135592
+80075	Metatranscriptomics analysis using microbiome RNA-seq data - Workflow 1: Preprocessing (imported from uploaded file)	52400	135593
+80077	Metatranscriptomics analysis using microbiome RNA-seq data - Workflow 2: Community profile (imported from uploaded file)	52400	135597
