@@ -1,4 +1,4 @@
-# reporting-service
+# Galaxy reporting service
 
 Ingests nginx access logs from S3, enriches them against the Galaxy
 database, and writes data points to InfluxDB for dashboarding.
