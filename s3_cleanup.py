@@ -24,7 +24,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from s3 import S3Storage
+from common.s3 import S3Storage
 
 load_dotenv(Path(__file__).parent / '.env')
 

@@ -2,7 +2,6 @@
 
 import logging
 import os
-import sys
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -10,12 +9,10 @@ from typing import Callable, Optional
 
 from sqlalchemy import create_engine
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from s3 import S3Storage  # noqa: E402
-
-from common.domains import load_domain_map  # noqa: E402
-from common.influx import write_to_influxdb  # noqa: E402
-from common.state import load_ingested_keys, mark_ingested  # noqa: E402
+from common.domains import load_domain_map
+from common.influx import write_to_influxdb
+from common.s3 import S3Storage
+from common.state import load_ingested_keys, mark_ingested
 
 logger = logging.getLogger(__name__)
 
