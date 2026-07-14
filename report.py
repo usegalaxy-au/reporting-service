@@ -53,6 +53,13 @@ def parse_args():
         action='store_true',
         help="Print line protocol to stdout instead of writing to InfluxDB.",
     )
+    parser.add_argument(
+        '--pause',
+        type=int,
+        default=0,
+        metavar='SECONDS',
+        help="Seconds to sleep between S3 objects (reduces DB load).",
+    )
     args = parser.parse_args()
     today = date.today()
     args.start = args.start or today - timedelta(days=LOOKBACK_DAYS)
@@ -67,7 +74,7 @@ def main():
     load_dotenv(Path(__file__).parent / '.env')
     setup_logging()
     args = parse_args()
-    run(REGISTRY[args.report], args.start, args.end, args.dry)
+    run(REGISTRY[args.report], args.start, args.end, args.dry, args.pause)
 
 
 if __name__ == '__main__':

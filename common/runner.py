@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 from dataclasses import dataclass
 from datetime import date
 from typing import Callable, Optional
@@ -27,7 +28,13 @@ class Report:
     build_points: Callable[..., list[str]]
 
 
-def run(report: Report, start_date: date, end_date: date, dry: bool) -> None:
+def run(
+    report: Report,
+    start_date: date,
+    end_date: date,
+    dry: bool,
+    pause: int = 0,
+) -> None:
     s3 = S3Storage(prefix=os.environ[report.s3_prefix_env])
     state_dir = state.get_dir(report.name)
     ingested = state.load_ingested_keys(state_dir, start_date, end_date)
@@ -67,3 +74,7 @@ def run(report: Report, start_date: date, end_date: date, dry: bool) -> None:
                     "key not marked ingested",
                     key,
                 )
+
+            if pause and data_points:
+                logger.debug("Pausing %ds between keys", pause)
+                time.sleep(pause)
