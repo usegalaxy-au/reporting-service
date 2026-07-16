@@ -77,6 +77,10 @@ def write_to_influxdb(lines: list[str]):
                 "Wrote %d data points to InfluxDB (HTTP %d)",
                 len(lines), response.status,
             )
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        logger.error("Failed to write to InfluxDB: %s\n%s", e, body)
+        sys.exit(1)
     except urllib.error.URLError as e:
         logger.error("Failed to write to InfluxDB: %s", e)
         sys.exit(1)
