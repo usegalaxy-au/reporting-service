@@ -38,7 +38,7 @@ JOB_QUERY = text("""
     LEFT JOIN galaxy_user u ON u.id = j.user_id
     WHERE j.create_time BETWEEN :ts_start AND :ts_end
       AND j.tool_id = :tool_id
-    ORDER BY ABS(EXTRACT(EPOCH FROM (j.create_time - :ts)))
+    ORDER BY j.create_time
     LIMIT 1
 """)
 
@@ -93,7 +93,6 @@ def _get_job_for_record(conn, parsed: dict, domain_map: dict) -> dict | None:
     result = conn.execute(
         JOB_QUERY,
         {
-            'ts': dt,
             'ts_start': dt - timedelta(seconds=JOB_MATCH_WINDOW_SECONDS),
             'ts_end': dt + timedelta(seconds=JOB_MATCH_WINDOW_SECONDS),
             'tool_id': parsed['tool_id_full'],
