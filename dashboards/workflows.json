@@ -1,0 +1,562 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Galaxy workflow invocations collected from Nginx access logs. Filter by domain, TRS provenance, and workflow name; compare volume and unique users across Galaxy domains.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "Invocations",
+          "groupBy": [],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT SUM(\"count\") FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Total invocations",
+      "type": "stat"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "Unique users",
+          "groupBy": [],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT COUNT(DISTINCT(\"user_id\")) FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Unique users",
+      "type": "stat"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "purple", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "Unique workflows",
+          "groupBy": [],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT COUNT(DISTINCT(\"workflow_id\")) FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Unique workflows",
+      "type": "stat"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "orange", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["count"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "groupBy": [{"params": ["domain"], "type": "tag"}],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT COUNT(DISTINCT(\"workflow_id\")) FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter GROUP BY \"domain\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Active domains",
+      "type": "stat"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "normal"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 4},
+      "id": 5,
+      "options": {
+        "legend": {"calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "$tag_domain",
+          "groupBy": [
+            {"params": ["$__interval"], "type": "time"},
+            {"params": ["domain"], "type": "tag"},
+            {"params": ["0"], "type": "fill"}
+          ],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT SUM(\"count\") FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter GROUP BY time($__interval), \"domain\" fill(0)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Invocations over time, by domain",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Invocations",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineWidth": 1
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 13},
+      "id": 6,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.85,
+        "groupWidth": 0.7,
+        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true},
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {"mode": "single", "sort": "none"},
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "groupBy": [
+            {"params": ["workflow_name"], "type": "tag"},
+            {"params": ["domain"], "type": "tag"}
+          ],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT SUM(\"count\") FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter GROUP BY \"workflow_name\", \"domain\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "table"
+        }
+      ],
+      "title": "Top 20 workflows by invocations",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {"Time": true},
+            "indexByName": {"workflow_name": 0, "domain": 1, "sum": 2},
+            "renameByName": {"sum": "Invocations", "workflow_name": "Workflow", "domain": "Domain"}
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [{"desc": true, "field": "Invocations"}]
+          }
+        },
+        {
+          "id": "limit",
+          "options": {"limitField": 20}
+        }
+      ],
+      "type": "barchart"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {
+            "align": "auto",
+            "cellOptions": {"type": "auto"},
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "count_distinct"},
+            "properties": [{"id": "displayName", "value": "Unique users"}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "workflow_name"},
+            "properties": [{"id": "displayName", "value": "Workflow"}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Time"},
+            "properties": [{"id": "custom.hidden", "value": true}]
+          }
+        ]
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 13},
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Unique users"}]
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "$tag_workflow_name",
+          "groupBy": [{"params": ["workflow_name"], "type": "tag"}],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT COUNT(DISTINCT(\"user_id\")) FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter GROUP BY \"workflow_name\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "table"
+        }
+      ],
+      "title": "Top workflows by unique users",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {"Time": true},
+            "indexByName": {},
+            "renameByName": {"count_distinct": "Unique users", "workflow_name": "Workflow"}
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [{"desc": true, "field": "Unique users"}]
+          }
+        },
+        {
+          "id": "limit",
+          "options": {"limitField": 30}
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "reporting",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 23},
+      "id": 8,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "horizontal",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "$tag_domain",
+          "groupBy": [{"params": ["domain"], "type": "tag"}],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT COUNT(DISTINCT(\"user_id\")) FROM \"workflow_invocation\" WHERE $trs_filter AND $timeFilter GROUP BY \"domain\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Unique users per domain",
+      "type": "bargauge"
+    },
+    {
+      "datasource": "reporting",
+      "description": "Unique users that ran the workflow(s) selected in the $workflow_name variable.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 23},
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0",
+      "targets": [
+        {
+          "alias": "Users",
+          "groupBy": [],
+          "measurement": "workflow_invocation",
+          "policy": "default",
+          "query": "SELECT COUNT(DISTINCT(\"user_id\")) FROM \"workflow_invocation\" WHERE $trs_filter AND \"workflow_name\" =~ /^$workflow_name$/ AND \"domain\" =~ /^$domain$/ AND $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Users running selected workflow ($workflow_name)",
+      "type": "stat"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 31},
+      "id": 10,
+      "panels": [
+        {
+          "datasource": "reporting",
+          "description": "Raw invocation rows for ad-hoc reporting. Use the panel's Inspect → Data → Download CSV to export.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "custom": {
+                "align": "auto",
+                "cellOptions": {"type": "auto"},
+                "inspect": true
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 12, "w": 24, "x": 0, "y": 32},
+          "id": 11,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+            "showHeader": true
+          },
+          "pluginVersion": "9.5.0",
+          "targets": [
+            {
+              "groupBy": [],
+              "measurement": "workflow_invocation",
+              "policy": "default",
+              "query": "SELECT \"domain\", \"workflow_name\", \"user_id\", \"count\" FROM \"workflow_invocation\" WHERE $trs_filter AND \"domain\" =~ /^$domain$/ AND $timeFilter ORDER BY time DESC LIMIT 5000",
+              "rawQuery": true,
+              "refId": "A",
+              "resultFormat": "table"
+            }
+          ],
+          "title": "Raw invocations (export-friendly)",
+          "type": "table"
+        }
+      ],
+      "title": "Raw data",
+      "type": "row"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["galaxy", "workflows", "reporting"],
+  "templating": {
+    "list": [
+      {
+        "current": {"selected": true, "text": "TRS Only", "value": "\"trs_server\" != ''"},
+        "hide": 0,
+        "includeAll": false,
+        "label": "TRS filter",
+        "multi": false,
+        "name": "trs_filter",
+        "options": [
+          {"selected": true, "text": "TRS Only", "value": "\"trs_server\" != ''"},
+          {"selected": false, "text": "All Workflows", "value": "\"workflow_name\" != ''"}
+        ],
+        "query": "TRS Only : \"trs_server\" != '',All Workflows : \"workflow_name\" != ''",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {"selected": true, "text": ["All"], "value": ["$__all"]},
+        "datasource": "reporting",
+        "definition": "SHOW TAG VALUES FROM \"workflow_invocation\" WITH KEY = \"domain\"",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Domain",
+        "multi": true,
+        "name": "domain",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"workflow_invocation\" WITH KEY = \"domain\"",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {"selected": true, "text": ["All"], "value": ["$__all"]},
+        "datasource": "reporting",
+        "definition": "SHOW TAG VALUES FROM \"workflow_invocation\" WITH KEY = \"workflow_name\" WHERE \"domain\" =~ /^$domain$/ AND $trs_filter",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Workflow name",
+        "multi": true,
+        "name": "workflow_name",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"workflow_invocation\" WITH KEY = \"workflow_name\" WHERE \"domain\" =~ /^$domain$/ AND $trs_filter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {"from": "now-90d", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "Galaxy Workflow Invocations",
+  "uid": "galaxy-workflow-invocations",
+  "version": 1,
+  "weekStart": ""
+}
