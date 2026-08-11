@@ -57,13 +57,31 @@
       }
     ]
   },
-  "description": "Tool run and unique-user counts from InfluxDB, filterable by domain and institution.",
+  "description": "Top tools, institutions and sites by run count / unique users. See Galaxy tools — Detailed for tool-name search and drill-down.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [],
   "liveNow": false,
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "influxdb",
+    "galaxy",
+    "tool_runs",
+    "overview"
+  ],
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Galaxy tools — Overview",
+  "uid": null,
+  "version": 1,
+  "weekStart": "",
   "panels": [
     {
       "datasource": {
@@ -186,7 +204,7 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
-      "description": "Top ten Galaxy domains by tool run count within the selected dashboard time range. Dashboard filters do not apply.",
+      "description": "Top ten Galaxy sites by tool run count within the selected dashboard time range. Dashboard filters do not apply.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -253,7 +271,7 @@
           "resultFormat": "time_series"
         }
       ],
-      "title": "Top 10 domains",
+      "title": "Top 10 sites",
       "transformations": [
         {
           "id": "seriesToRows",
@@ -309,6 +327,100 @@
       "panels": [],
       "title": "Filtered statistics",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "Total runs over time across all tools, filtered by Site and Institution.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Runs",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "alias": "Runs",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) GROUP BY time($__interval) fill(0)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Runs over time",
+      "transformations": [],
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -374,9 +486,9 @@
       },
       "gridPos": {
         "h": 18,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 11
+        "y": 20
       },
       "id": 1,
       "options": {
@@ -464,100 +576,6 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
-      "description": "Run count over time for the tool selected in the Tool dropdown.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Runs",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 29
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "alias": "$tool",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND \"tool_id\" =~ /^${tool:regex}$/ GROUP BY time($__interval) fill(0)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Runs over time \u2014 $tool",
-      "transformations": [],
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
       "description": "Top twenty tools by distinct user count within the selected dashboard time range. Runs without a user_id are not counted.",
       "fieldConfig": {
         "defaults": {
@@ -617,9 +635,9 @@
       },
       "gridPos": {
         "h": 18,
-        "w": 12,
-        "x": 12,
-        "y": 11
+        "w": 24,
+        "x": 0,
+        "y": 38
       },
       "id": 3,
       "options": {
@@ -703,13 +721,6 @@
       "type": "barchart"
     }
   ],
-  "refresh": "",
-  "schemaVersion": 39,
-  "tags": [
-    "influxdb",
-    "galaxy",
-    "tool_runs"
-  ],
   "templating": {
     "list": [
       {
@@ -724,10 +735,10 @@
           "uid": "${DS_INFLUXDB}"
         },
         "definition": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"domain\" WHERE $timeFilter",
-        "description": "Filter every panel to a Galaxy domain.",
+        "description": "Filter every panel to a Galaxy site.",
         "hide": 0,
         "includeAll": true,
-        "label": "Domain",
+        "label": "Site",
         "multi": false,
         "name": "domain",
         "options": [],
@@ -750,7 +761,7 @@
           "uid": "${DS_INFLUXDB}"
         },
         "definition": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"institution\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/",
-        "description": "Filter every panel to an institution. Values follow the selected time range and Domain.",
+        "description": "Filter every panel to an institution. Values follow the selected time range and site.",
         "hide": 0,
         "includeAll": true,
         "label": "Institution",
@@ -763,39 +774,7 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "allValue": null,
-        "current": {},
-        "datasource": {
-          "type": "influxdb",
-          "uid": "${DS_INFLUXDB}"
-        },
-        "definition": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"tool_id\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/)",
-        "description": "Select a tool to display in the time-series panel.",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Tool",
-        "multi": false,
-        "name": "tool",
-        "options": [],
-        "query": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"tool_id\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/)",
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
       }
     ]
-  },
-  "time": {
-    "from": "now-30d",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "Galaxy tool runs",
-  "uid": null,
-  "version": 1,
-  "weekStart": ""
+  }
 }
