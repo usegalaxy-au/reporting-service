@@ -127,7 +127,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 700
+                "value": 420
               }
             ]
           },
@@ -139,7 +139,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 140
+                "value": 100
               }
             ]
           }
@@ -147,7 +147,7 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -220,6 +220,150 @@
             },
             "renameByName": {
               "Metric": "Tool",
+              "Value": "Runs"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "Total runs of all tools matching the Tool search text, broken down by institution.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Institution"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "string"
+              },
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Runs"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Runs"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "alias": "$tag_institution",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND \"institution\" != '' AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/) GROUP BY \"institution\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Matching tools by institution",
+      "transformations": [
+        {
+          "id": "seriesToRows",
+          "options": {}
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "desc": true,
+                "field": "Value"
+              }
+            ]
+          }
+        },
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 50
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Metric": 0,
+              "Value": 1
+            },
+            "renameByName": {
+              "Metric": "Institution",
               "Value": "Runs"
             }
           }
