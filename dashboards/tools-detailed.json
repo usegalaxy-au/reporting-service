@@ -88,6 +88,243 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
+      "description": "Count of distinct tools matching \"$tool_search\", filtered by Domain and Institution.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "alias": "Number of tools matched",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/) GROUP BY \"tool_id\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Number of tools matched",
+      "transformations": [
+        {
+          "id": "seriesToRows",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Metric": true
+            },
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {}
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "count"
+            ]
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "Count of distinct institutions with runs matching \"$tool_search\", filtered by Domain. Excludes unenriched (empty institution) runs.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "alias": "Number of institutions matched",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND \"institution\" != '' AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/) GROUP BY \"institution\"",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Number of institutions matched",
+      "transformations": [
+        {
+          "id": "seriesToRows",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Metric": true
+            },
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {}
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "count"
+            ]
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "Total runs across every tool matching \"$tool_search\", filtered by Domain and Institution.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "alias": "Total number of jobs",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Total number of jobs",
+      "transformations": [],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
       "description": "Every tool matching the Tool search text, ranked by total run count (up to 50).",
       "fieldConfig": {
         "defaults": {
@@ -149,7 +386,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 10,
       "options": {
@@ -293,7 +530,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 3
       },
       "id": 11,
       "options": {
@@ -376,6 +613,108 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
+      "description": "One series per tool matching the Tool search text. Blank until a search is entered, to avoid rendering one series per tool (~800+) on initial load. Legend labels are shortened to owner/tool.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Runs",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "alias": "$tag_tool_id",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND ${tool_search:singlequote} != '' AND \"tool_id\" =~ /${tool_search:regex}/ GROUP BY \"tool_id\", time($__interval) fill(0)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Runs over time — per tool",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*/repos/([^/]+)/[^/]+/(.*)",
+            "renamePattern": "$1/$2"
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
       "description": "Total runs across every tool whose ID contains the Tool search text. Also filtered by Domain and Institution.",
       "fieldConfig": {
         "defaults": {
@@ -430,7 +769,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 12
       },
       "id": 8,
       "options": {
@@ -462,202 +801,6 @@
         }
       ],
       "title": "Runs over time — all tools matching \"$tool_search\"",
-      "transformations": [],
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "description": "One series per tool matching the Tool search text. Legend labels are shortened to owner/tool.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Runs",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 18
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "alias": "$tag_tool_id",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/) GROUP BY \"tool_id\", time($__interval) fill(0)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Runs over time — per tool",
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": ".*/repos/([^/]+)/[^/]+/(.*)",
-            "renamePattern": "$1/$2"
-          }
-        }
-      ],
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "description": "Run count over time for the tool selected in the Tool dropdown.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Runs",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 30
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "alias": "$tool",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND \"tool_id\" =~ /^${tool:regex}$/ GROUP BY time($__interval) fill(0)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Runs over time — $tool",
       "transformations": [],
       "type": "timeseries"
     }
@@ -701,15 +844,15 @@
           "type": "influxdb",
           "uid": "${DS_INFLUXDB}"
         },
-        "definition": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"institution\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/",
-        "description": "Filter every panel to an institution. Values follow the selected time range and Domain.",
+        "definition": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"institution\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/)",
+        "description": "Institutions with tool runs in the selected time range, matching the current Domain and Tool search filters.",
         "hide": 0,
         "includeAll": true,
         "label": "Institution",
         "multi": false,
         "name": "institution",
         "options": [],
-        "query": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"institution\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/",
+        "query": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"institution\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -736,28 +879,6 @@
         "query": "",
         "skipUrlSync": false,
         "type": "textbox"
-      },
-      {
-        "allValue": null,
-        "current": {},
-        "datasource": {
-          "type": "influxdb",
-          "uid": "${DS_INFLUXDB}"
-        },
-        "definition": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"tool_id\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/)",
-        "description": "Select a tool to display in the time-series panel. Narrowed by Tool search.",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Tool",
-        "multi": false,
-        "name": "tool",
-        "options": [],
-        "query": "SHOW TAG VALUES FROM \"tool_runs\" WITH KEY = \"tool_id\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/)",
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
       }
     ]
   }
