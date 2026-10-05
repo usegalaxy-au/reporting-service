@@ -325,7 +325,7 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
-      "description": "Every tool matching the Tool search text, ranked by total run count (up to 50).",
+      "description": "Every tool matching the Tool search text, ranked by total run count (up to 50), with the number of distinct users who ran each tool. Runs without a user_id are not counted as users.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -379,6 +379,18 @@
                 "value": 100
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Users"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
           }
         ]
       },
@@ -409,7 +421,6 @@
       },
       "targets": [
         {
-          "alias": "$tag_tool_id",
           "datasource": {
             "type": "influxdb",
             "uid": "${DS_INFLUXDB}"
@@ -417,13 +428,23 @@
           "query": "SELECT sum(\"count\") AS \"runs\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/) GROUP BY \"tool_id\"",
           "rawQuery": true,
           "refId": "A",
-          "resultFormat": "time_series"
+          "resultFormat": "table"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "SELECT count(distinct(\"user_id\")) AS \"users\" FROM \"tool_runs\" WHERE $timeFilter AND \"domain\" =~ /^${domain:regex}$/ AND (${institution:singlequote} = '__all__' OR \"institution\" =~ /^${institution:regex}$/) AND (${tool_search:singlequote} = '' OR \"tool_id\" =~ /${tool_search:regex}/) GROUP BY \"tool_id\"",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "table"
         }
       ],
-      "title": "Matching tools by runs",
+      "title": "Matching tools usage",
       "transformations": [
         {
-          "id": "seriesToRows",
+          "id": "merge",
           "options": {}
         },
         {
@@ -433,7 +454,7 @@
             "sort": [
               {
                 "desc": true,
-                "field": "Value"
+                "field": "runs"
               }
             ]
           }
@@ -452,12 +473,14 @@
             },
             "includeByName": {},
             "indexByName": {
-              "Metric": 0,
-              "Value": 1
+              "tool_id": 0,
+              "runs": 1,
+              "users": 2
             },
             "renameByName": {
-              "Metric": "Tool",
-              "Value": "Runs"
+              "tool_id": "Tool",
+              "runs": "Runs",
+              "users": "Users"
             }
           }
         }
