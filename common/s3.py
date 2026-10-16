@@ -100,12 +100,16 @@ class S3Storage:
                     yield obj['Key']
             current += timedelta(days=1)
 
-    def read_records(self, key: str):
-        """Yield parsed JSON records from a single S3 log object."""
+    def read_object(self, key: str) -> bytes:
+        """Return the raw (still gzipped) bytes of a single S3 object."""
         client = self._get_client()
         logger.info("Downloading s3://%s/%s", self.bucket, key)
         response = client.get_object(Bucket=self.bucket, Key=key)
-        body = response['Body'].read()
+        return response['Body'].read()
+
+    def read_records(self, key: str):
+        """Yield parsed JSON records from a single S3 log object."""
+        body = self.read_object(key)
         with gzip.open(io.BytesIO(body)) as f:
             for line in f:
                 line = line.strip()

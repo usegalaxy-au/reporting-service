@@ -15,6 +15,7 @@ Two reports are wired up today:
 ```
 report.py                 # unified CLI entrypoint
 s3_cleanup.py             # ages out old S3 log objects
+download.py               # bulk-downloads a date range of S3 logs
 common/
   s3.py                   # S3 client (list / read / date-key parsing)
   influx.py               # line protocol + HTTP write
@@ -75,6 +76,35 @@ Cron entries:
 State files under `state/<report>/` dedup S3 keys
 that have already been ingested, so re-running over the same window is
 cheap and idempotent.
+
+## Downloading logs
+
+`download.py` pulls a date range of Nginx logs out of S3 for offline
+analysis:
+
+```bash
+./venv/bin/python download.py \
+    --from 2026-09-01 --to 2026-10-15 \
+    --outdir 6weeks --decompress --squash-days 7
+```
+
+| Flag            | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `--from`        | First day, `YYYY-MM-DD` (required)                       |
+| `--to`          | Last day, inclusive (required)                           |
+| `--outdir`      | Output directory, created if missing (required)          |
+| `--type`        | `cleaned` (default), `raw`, `error`, `tool_runs`, `workflow_invocations` |
+| `--server`      | `prod` (default, `galaxy/` in the bucket) or `dev`        |
+| `--decompress`  | Gunzip logs before writing (`.log` rather than `.log.gz`) |
+| `--squash-days` | Concatenate logs into batches of N days                  |
+
+Objects are read from `<server>/nginx-logs/<type>/YYYY/MM/DD/`. Without
+`--squash-days`, each S3 object is saved as `YYYY-MM-DD_<name>` and files
+that already exist are skipped, so an interrupted run can be resumed. With
+it, batches start at `--from` and are named `<first-day>_<last-day>.log`
+(the last batch is clipped to `--to`; days with no logs produce no file).
+Batches are rebuilt on every run. Without `--decompress`, a batch is a
+series of concatenated gzip members, which `zcat` reads as one stream.
 
 ## Tests
 
