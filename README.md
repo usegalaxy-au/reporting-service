@@ -16,6 +16,8 @@ Two reports are wired up today:
 report.py                 # unified CLI entrypoint
 s3_cleanup.py             # ages out old S3 log objects
 download.py               # bulk-downloads a date range of S3 logs
+spam_analysis.py          # spam/scan traffic analysis + fail2ban backtest
+analysis/                 # DuckDB ingest, classifier, fail2ban generator
 common/
   s3.py                   # S3 client (list / read / date-key parsing)
   influx.py               # line protocol + HTTP write
@@ -122,3 +124,39 @@ The integration suite boots a Postgres testcontainer seeded from
 pinned historical date (cached once per session to avoid repeated
 downloads), and asserts on the line-protocol output. See
 `tests/integration/conftest.py` for the fixture wiring.
+
+## Spam / scan traffic analysis
+
+Analyses a directory of raw nginx logs (e.g. from `download.py --type
+raw`) to find spam traffic and to draft and backtest fail2ban rules.
+Crawler user agents are tagged and excluded; real Galaxy `/api` routes
+are never treated as malicious.
+
+```bash
+./venv/bin/pip install -r analysis/requirements.txt
+./venv/bin/python spam_analysis.py all \
+    --logs galaxy-nginx-logs --out analysis/output/2026-08-01_07
+```
+
+Steps can also be run individually (`parse`, `profile`, `patterns`,
+`ranges`, `backtest`, `report`). `parse` writes Parquet and later steps
+only read it, so it is only needed once per sample; it skips files that
+are already ingested, so an interrupted run can simply be restarted.
+CSVs, a chart and `findings.md` are written to `--out` (gitignored).
+Over a long period, `backtest_by_month.csv` shows whether the results
+hold month to month and `backtest_repeat_offenders.csv` lists IPs banned
+in several weeks (candidates for a fail2ban `recidive` jail).
+
+On a small host, cap DuckDB with `--memory-limit 1GB --threads 2` (it
+spills to `<out>/duckdb_tmp`) and run under `nice`/`ionice`.
+
+To cross-check the regexes against real fail2ban, compare
+`spam_analysis.py matchcount --out DIR --source <file stem>` with
+`fail2ban-regex <that log> analysis/fail2ban/filter.d/<filter>.conf`;
+the matched totals should be equal.
+
+The patterns live in `analysis/classify.py`. The fail2ban filters in
+`analysis/fail2ban/` are **generated** from it: after changing a pattern
+run `./venv/bin/python spam_analysis.py filters` (`backtest` and the unit
+tests refuse stale files). Please run `fail2ban-regex` on the server
+before deploying; it isn't available here, so the backtest uses RE2/`re`.
