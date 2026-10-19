@@ -1,0 +1,44 @@
+# Example jails; tune with `python spam_analysis.py backtest`.
+# 127.0.0.0/8 MUST be ignored: interactive-tool traffic reaches
+# nginx via a local proxy, so banning loopback breaks them.
+
+[galaxy-scan]
+enabled  = true
+port     = http,https
+filter   = galaxy-scan
+logpath  = /var/log/nginx/access.log
+maxretry = 3
+findtime = 600
+bantime  = 3600
+ignoreip = 127.0.0.0/8 ::1
+
+[galaxy-malformed]
+enabled  = true
+port     = http,https
+filter   = galaxy-malformed
+logpath  = /var/log/nginx/access.log
+maxretry = 3
+findtime = 600
+bantime  = 3600
+ignoreip = 127.0.0.0/8 ::1
+
+[galaxy-badagent]
+enabled  = true
+port     = http,https
+filter   = galaxy-badagent
+logpath  = /var/log/nginx/access.log
+maxretry = 1
+findtime = 600
+bantime  = 86400
+ignoreip = 127.0.0.0/8 ::1
+
+# Stock fail2ban jail (filter.d/recidive.conf ships with fail2ban):
+# long bans for IPs the jails above keep banning.
+[recidive]
+enabled  = true
+filter   = recidive
+logpath  = /var/log/fail2ban.log
+maxretry = 3
+findtime = 86400
+bantime  = 604800
+ignoreip = 127.0.0.0/8 ::1

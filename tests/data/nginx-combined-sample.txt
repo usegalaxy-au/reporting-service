@@ -1,0 +1,12 @@
+203.0.113.1 - - [03/Aug/2026:23:00:03 +0000] "GET /history/current_history_json?since=2026-08-01T04:06:22 HTTP/1.1" 200 35 "https://usegalaxy.org.au/" "Mozilla/5.0 (X11; Linux x86_64) Chrome/141.0.0.0 Safari/537.36"
+203.0.113.2 - - [03/Aug/2026:23:00:04 +0000] "GET /api/histories?limit=10 HTTP/1.1" 200 512 "-" "python-requests/2.31"
+203.0.113.3 - - [03/Aug/2026:23:00:05 +0000] "GET /wp-login.php HTTP/1.1" 302 0 "-" "-"
+203.0.113.3 - - [03/Aug/2026:23:00:06 +0000] "GET /x/.env HTTP/1.1" 404 169 "-" "-"
+203.0.113.3 - - [03/Aug/2026:23:00:07 +0000] "GET /api/smtp/smtp%2ejson HTTP/1.1" 404 169 "-" "Mozilla/5.0 zgrab/0.x"
+203.0.113.4 - - [03/Aug/2026:23:00:08 +0000] "GET /api/api/workflows/abc/download HTTP/1.1" 404 169 "-" "Mozilla/5.0 Chrome/150"
+203.0.113.5 - - [03/Aug/2026:23:00:09 +0000] "\x16\x03\x01\x00\xBA\x01\x00" 400 150 "-" "-"
+203.0.113.6 - - [03/Aug/2026:23:00:10 +0000] "GET /datasets/abc/display/plugins/RegexSequenceSearch/css/main.css HTTP/1.1" 404 169 "https://usegalaxy.org.au/" "Mozilla/5.0 Firefox/140.0"
+203.0.113.7 - - [03/Aug/2026:23:00:11 +0000] "GET /.well-known/passkey-endpoints HTTP/1.1" 404 169 "-" "Mozilla/5.0 Chrome/150"
+203.0.113.8 - - [03/Aug/2026:23:00:12 +0000] "GET /ipython HTTP/1.1" 404 169 "-" "Mozilla/5.0 x.php"
+203.0.113.9 - - [03/Aug/2026:23:00:13 +0000] "GET /a.php?x=1 HTTP/1.1" 404 169 "http://example.com/b.php" "-"
+this line is not an nginx log line
