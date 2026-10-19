@@ -360,6 +360,8 @@ def match_counts(
     con = analysis.con
     rows = []
     jails = filters.load_jails(fail2ban_dir / filters.JAIL_FILENAME)
+    # recidive reads fail2ban's own log, not nginx's: nothing to count.
+    jails.pop(filters.RECIDIVE_JAIL, None)
     for name, jail in jails.items():
         fail, ignore = filters.load_filter(
             fail2ban_dir / filters.FILTER_DIRNAME / f"{jail['filter']}.conf")
