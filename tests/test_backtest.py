@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
-from analysis.backtest import is_ignored, repeat_offenders, simulate
+from analysis.backtest import (
+    is_ignored, recidive_bans, repeat_offenders, simulate)
 
 START = datetime(2026, 8, 1, 12, 0, 0)
 
@@ -73,3 +74,17 @@ def test_repeat_offenders_sorted_by_weeks_then_bans():
     assert [r['ip'] for r in rows] == ['a.b.c.1', 'a.b.c.2']
     assert rows[1]['bans'] == 4
     assert rows[1]['jails'] == 'galaxy-malformed galaxy-scan'
+
+
+def test_recidive_bans_after_repeated_bans_within_findtime():
+    hour = 3600
+    bans = [_ban('198.51.100.1', 0), _ban('198.51.100.1', 0.25),
+            _ban('198.51.100.1', 0.5),          # 3 bans within a day
+            _ban('198.51.100.2', 0), _ban('198.51.100.2', 2),
+            _ban('198.51.100.2', 4)]            # 3 bans, days apart
+    rec = recidive_bans(bans, maxretry=3, findtime=24 * hour,
+                        bantime=7 * 24 * hour)
+    assert [r[0] for r in rec] == ['198.51.100.1']
+    ip, start, end, failures = rec[0]
+    assert start == START + timedelta(days=0.5)
+    assert end - start == timedelta(days=7)

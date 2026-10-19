@@ -83,6 +83,23 @@ def simulate(
     return bans
 
 
+def recidive_bans(
+    bans: list[tuple],
+    maxretry: int,
+    findtime: int,
+    bantime: int,
+) -> list[tuple[str, datetime, datetime, int]]:
+    """Simulate fail2ban's recidive jail over the other jails' bans.
+
+    ``bans`` rows are (jail, ip, start, end, failures); each ban is one
+    recidive "failure". The simulation doesn't feed back: while recidive
+    blocks an IP the nginx jails keep simulating, but blocked requests are
+    only counted once (see ``_report``).
+    """
+    events = sorted((ip, start) for _jail, ip, start, _end, _f in bans)
+    return simulate(events, maxretry, findtime, bantime)
+
+
 def repeat_offenders(
     bans: list[tuple],
     min_weeks: int = REPEAT_MIN_WEEKS,
@@ -145,6 +162,7 @@ def run(
     ).fetchone()[0]
 
     summary, all_bans = [], []
+    recidive = jails.pop(filters.RECIDIVE_JAIL, None)
     for name, jail in jails.items():
         fail, ignore = filters.load_filter(
             fail2ban_dir / filters.FILTER_DIRNAME / f"{jail['filter']}.conf")
@@ -166,6 +184,19 @@ def run(
                         'matched_ips': len({e[0] for e in events}),
                         'bans': len(bans),
                         'banned_ips': len({b[0] for b in bans})})
+
+    if recidive:
+        bans = recidive_bans(
+            all_bans, recidive['maxretry'], recidive['findtime'],
+            recidive['bantime'])
+        logger.info('%s: %d earlier bans, %d bans', filters.RECIDIVE_JAIL,
+                    len(all_bans), len(bans))
+        summary.append({'jail': filters.RECIDIVE_JAIL,
+                        'matched_requests': len(all_bans),
+                        'matched_ips': len({b[1] for b in all_bans}),
+                        'bans': len(bans),
+                        'banned_ips': len({b[0] for b in bans})})
+        all_bans.extend((filters.RECIDIVE_JAIL, *b) for b in bans)
 
     paths = _report(analysis, summary, all_bans, total_malicious)
     return paths
@@ -235,7 +266,9 @@ def _report(analysis, summary, all_bans, total_malicious) -> list[Path]:
          'blocked_non_malicious_ok', 'malicious_total'])]
     paths.append(_by_month(analysis))
     paths.append(_write_rows(
-        out / 'backtest_repeat_offenders.csv', repeat_offenders(all_bans),
+        out / 'backtest_repeat_offenders.csv',
+        repeat_offenders(
+            [b for b in all_bans if b[0] != filters.RECIDIVE_JAIL]),
         ['ip', 'subnet24', 'bans', 'weeks_banned', 'jails', 'first_ban',
          'last_ban']))
 

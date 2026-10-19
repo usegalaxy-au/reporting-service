@@ -24,6 +24,15 @@ HOST_PLACEHOLDER = '<HOST>'
     '/serviceAccountKey.json',
     '/secrets.yml',
     '/docker-compose.yaml',
+    '/key.json',
+    '/gcp-key.json',
+    '/sa.json',
+    '/config.env',
+    '/appsettings.Development.json',
+    '/_environment',
+    '/phpinfo',
+    '/phpinfo.php.save',
+    '/index.php~',
     '/icons/%252e%252e/%252e%252e/etc',
     '/datasets/abc/display/?p=1%27%20UNION%20SELECT%20NULL',
 ])
@@ -41,6 +50,9 @@ def test_scanner_targets_match(target):
     '/ipython',
     '/apple-touch-icon.png',
     '/admin/users',
+    '/visa.json',
+    '/login/token.php',
+    '/login/token.php?service=moodle_mobile_app',
 ])
 def test_genuine_targets_do_not_match(target):
     assert classify.scanner_match(target) is None
@@ -110,7 +122,8 @@ def test_generated_scan_regex_ignores_genuine_lines(line):
 
 @pytest.mark.parametrize('target', [
     '/graphql', '/v1/graphql', '/dist/.vite/manifest.json', '/dashboard',
-    '/admin/login', '/config.json?x=1',
+    '/admin/login', '/config.json?x=1', '/panel', '/info', '/auth',
+    '/chat/config.json',
 ])
 def test_app_probes_match_only_on_4xx(target):
     assert classify.scanner_match(target, 404) == 'app_probe'
@@ -123,6 +136,7 @@ def test_app_probes_match_only_on_4xx(target):
 @pytest.mark.parametrize('target', [
     '/user/login', '/api/histories', '/datasets/abc/display/x.css',
     '/dashboards', '/static/config.json', '/apple-touch-icon.png',
+    '/authnz/oidc/callback',
 ])
 def test_app_probe_ignores_other_4xx(target):
     assert classify.scanner_match(target, 404) is None
@@ -142,7 +156,8 @@ def test_checked_in_filter_files_are_up_to_date():
 
 
 def test_every_scanner_pattern_has_a_description():
-    names = {*classify.SCANNER_PATH_PATTERNS, *classify.SCANNER_4XX_PATTERNS}
+    names = {*classify.SCANNER_PATH_PATTERNS, *classify.SCANNER_4XX_PATTERNS,
+             *classify.SCANNER_EXEMPT_PATTERNS}
     assert names == set(classify.SCANNER_DESCRIPTIONS)
 
 
@@ -164,3 +179,14 @@ def test_rendered_filters_load_with_fail2ban_interpolation(tmp_path):
         path.write_text(filters.render_filter(fail, ignore))
         assert filters.load_filter(path) == (fail, ignore), name
     assert any('%' in r for r in filters.scan_failregex())
+
+
+def test_scan_ignoreregex_exempts_moodle_token_only():
+    fail, ignore = filters.scan_failregex(), filters.scan_ignoreregex()
+    exempt = _log_line('/login/token.php', 404)
+    # It looks like a PHP probe, but the ignoreregex lets it through.
+    assert _matches(fail, exempt) and _matches(ignore, exempt)
+    for target in ('/login/token.php?x=1',):
+        assert _matches(ignore, _log_line(target))
+    for target in ('/x/login/token.php', '/wp-login.php', '/token.php'):
+        assert not _matches(ignore, _log_line(target)), target

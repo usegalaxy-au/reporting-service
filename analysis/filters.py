@@ -43,13 +43,23 @@ SCAN_NOT_MATCHED = (
     'That needs a list of real Galaxy routes which goes stale; only '
     'scanner signatures are matched, including inside /api/ '
     '(e.g. /api/.env).')
+SCAN_EXEMPT_PREAMBLE = (
+    'Exempt (ignoreregex): requests that match a pattern above but come '
+    'from genuine users:')
 
-# name -> (filter name, maxretry, findtime seconds, bantime seconds)
+# name -> (maxretry, findtime seconds, bantime seconds)
 JAILS = {
-    'galaxy-scan': (3, 600, 86400),
+    # Short ban: a scanner can share an IP (NAT, VPN) with a real user.
+    # Persistent scanners are caught by the recidive jail instead.
+    'galaxy-scan': (3, 600, 3600),
     'galaxy-malformed': (3, 600, 3600),
     'galaxy-badagent': (1, 600, 86400),
 }
+# fail2ban's stock recidive jail: it reads fail2ban's own log, so it has
+# no generated filter. RECIDIVE bans for a week after 3 bans in a day.
+RECIDIVE_JAIL = 'recidive'
+RECIDIVE = (3, 86400, 604800)
+RECIDIVE_LOGPATH = '/var/log/fail2ban.log'
 IGNORE_IP = '127.0.0.0/8 ::1'
 
 
@@ -86,6 +96,16 @@ def scan_failregex() -> list[str]:
            for p in classify.SCANNER_4XX_PATTERNS.values()])
 
 
+def scan_ignoreregex() -> list[str]:
+    """Exempt request targets, matched anywhere after the method."""
+    ignores = []
+    for pattern in classify.SCANNER_EXEMPT_PATTERNS.values():
+        body = scoped_flags(pattern).replace('$', ' ')
+        body = body.replace('^/', '/', 1)
+        ignores.append(f'"[A-Za-z]+ {body}')
+    return ignores
+
+
 def badagent_failregex() -> list[str]:
     ua = scoped_flags(classify.TOOL_UA_PATTERNS)
     return [
@@ -97,7 +117,7 @@ def badagent_failregex() -> list[str]:
 def definitions() -> dict[str, tuple[list[str], list[str]]]:
     """Jail name -> (failregex list, ignoreregex list)."""
     return {
-        'galaxy-scan': (scan_failregex(), []),
+        'galaxy-scan': (scan_failregex(), scan_ignoreregex()),
         'galaxy-malformed': ([MALFORMED_REQUEST], []),
         'galaxy-badagent': (badagent_failregex(), []),
     }
@@ -132,7 +152,15 @@ def scan_description() -> str:
         lines.extend(_wrap(
             head + classify.SCANNER_DESCRIPTIONS[name],
             subsequent_indent=' ' * len(head)))
-    return '\n'.join([SCAN_PREAMBLE, *lines, '', SCAN_NOT_MATCHED])
+    exempt = []
+    for name in classify.SCANNER_EXEMPT_PATTERNS:
+        head = f'  - {name}  '
+        exempt.extend(_wrap(
+            head + classify.SCANNER_DESCRIPTIONS[name],
+            subsequent_indent=' ' * len(head)))
+    return '\n'.join([
+        SCAN_PREAMBLE, *lines, '', SCAN_EXEMPT_PREAMBLE, *exempt, '',
+        SCAN_NOT_MATCHED])
 
 
 def descriptions() -> dict[str, str]:
@@ -166,7 +194,6 @@ def render_filter(
 def render_jail() -> str:
     parts = [
         '# Example jails; tune with `python spam_analysis.py backtest`.\n'
-        '# Add the IPs from allowlist_candidates.csv to ignoreip.\n'
         '# 127.0.0.0/8 MUST be ignored: interactive-tool traffic reaches\n'
         '# nginx via a local proxy, so banning loopback breaks them.\n'
     ]
@@ -176,6 +203,14 @@ def render_jail() -> str:
             f'filter   = {name}\nlogpath  = /var/log/nginx/access.log\n'
             f'maxretry = {maxretry}\nfindtime = {findtime}\n'
             f'bantime  = {bantime}\nignoreip = {IGNORE_IP}\n')
+    maxretry, findtime, bantime = RECIDIVE
+    parts.append(
+        f'\n# Stock fail2ban jail (filter.d/recidive.conf ships with '
+        f'fail2ban):\n# long bans for IPs the jails above keep banning.\n'
+        f'[{RECIDIVE_JAIL}]\nenabled  = true\nfilter   = {RECIDIVE_JAIL}\n'
+        f'logpath  = {RECIDIVE_LOGPATH}\n'
+        f'maxretry = {maxretry}\nfindtime = {findtime}\n'
+        f'bantime  = {bantime}\nignoreip = {IGNORE_IP}\n')
     return ''.join(parts)
 
 

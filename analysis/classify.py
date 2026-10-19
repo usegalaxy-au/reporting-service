@@ -10,7 +10,9 @@ import re
 
 # Paths which can never exist on a Galaxy server. Matched on the target.
 SCANNER_PATH_PATTERNS = {
-    'php': r'(?i)\.php\d?($|[/?&])',
+    'php': (
+        r'(?i)(\.php\d?($|[/?&]|~|\.(save|bak|old|orig|swp))'
+        r'|/phpinfo($|\?))'),
     'wordpress': (
         r'(?i)/(wp-(admin|content|includes|login|json|config|cron)'
         r'|wordpress|xmlrpc)'),
@@ -33,7 +35,9 @@ SCANNER_PATH_PATTERNS = {
         r'(?i)/(id_(rsa|dsa|ecdsa|ed25519)|[^/?]*\.(pem|key|p12|pfx|tfstate)'
         r'|[^/?]*(credentials|service[-_]?account[^/?]*|serviceaccountkey'
         r'|firebase[^/?]*|secrets?)\.(json|ya?ml)|rclone\.conf|\.boto'
-        r'|\.s3cfg|docker-compose\.ya?ml|dockerfile)($|\?)'),
+        r'|\.s3cfg|docker-compose\.ya?ml|dockerfile'
+        r'|(gcp-key|key|sa|auth)\.json|config\.env|appsettings[^/?]*\.json'
+        r'|_environment)($|\?)'),
     'misc_probe': r'(?i)^/(containers/json|ipfs/|ip($|\?))',
     'archive_probe': (
         r'(?i)^/[^/?]*\.(sql|bak|old|zip|tar|tar\.gz|tgz|rar|7z)($|\?)'),
@@ -48,12 +52,14 @@ SCANNER_4XX_PATTERNS = {
         r'|(dist/|build/)?\.vite/manifest\.json|(dist|build)/manifest\.json'
         r'|runtime-config\.js|config\.json|dashboard|portal|workspace|app'
         r'|signin|account|profile|settings|my|manage|console|admin/login'
-        r'|auth/login)/?($|\?)'),
+        r'|auth/login|auth|info|panel|chat/config\.json)/?($|\?)'),
 }
 
 # One-line explanation per pattern, rendered into the fail2ban filters.
 SCANNER_DESCRIPTIONS = {
-    'php': 'PHP scripts (e.g. /wp-content/x.php, /1.php); Galaxy has none',
+    'php': (
+        'PHP scripts and their backup copies (/wp-content/x.php, /1.php, '
+        'x.php~, x.php.save, /phpinfo); Galaxy has none'),
     'wordpress': 'WordPress paths (/wp-admin, /wp-content, /xmlrpc)',
     'dotfile': 'hidden config/VCS files (/.git/config, /.env, /.aws)',
     'admin_panel': (
@@ -68,12 +74,24 @@ SCANNER_DESCRIPTIONS = {
         '(/api/smtp/smtp%2ejson, keys%2eenv)'),
     'secret_file': (
         'keys and credentials (id_rsa, *.pem, terraform.tfstate, '
-        'service-account JSON, docker-compose.yaml)'),
+        'service-account JSON, key.json, sa.json, config.env, '
+        'appsettings.*.json, docker-compose.yaml)'),
     'misc_probe': 'misc recon (/containers/json, /ipfs/, /ip)',
     'archive_probe': 'backup/archive in the web root (/backup.zip, /db.sql)',
     'app_probe': (
         'generic web-app routes (/graphql, /dashboard, /.vite/manifest.json,'
-        ' /admin/login); matched only when the response is 4xx'),
+        ' /admin/login, /panel); matched only when the response is 4xx'),
+    'moodle_token': (
+        '/login/token.php (Moodle), requested by a browser extension that '
+        'Galaxy users run'),
+}
+
+# Requests that match a scanner pattern but come from genuine users. They
+# are never scanner matches, and become ignoreregex in the scan filter.
+SCANNER_EXEMPT_PATTERNS = {
+    # Moodle's token endpoint, requested by a browser extension used by
+    # Galaxy users: over 3 months all 6 IPs were genuine (Galaxy referers).
+    'moodle_token': r'^/login/token\.php($|\?)',
 }
 
 BOGUS_API_NAME = 'bogus_api'
@@ -159,9 +177,14 @@ def scanner_case_sql(
     """
     whens = [
         f'WHEN regexp_matches({target_col}, {_sql_quote(pattern)}) '
+        'THEN NULL'
+        for pattern in SCANNER_EXEMPT_PATTERNS.values()
+    ]
+    whens.extend(
+        f'WHEN regexp_matches({target_col}, {_sql_quote(pattern)}) '
         f'THEN {_sql_quote(name)}'
         for name, pattern in SCANNER_PATH_PATTERNS.items()
-    ]
+    )
     if status_col:
         whens.extend(
             f'WHEN {status_col} BETWEEN 400 AND 499 '
@@ -179,6 +202,8 @@ def sql_in(values: tuple[str, ...]) -> str:
 
 def scanner_match(target: str, status: int | None = None) -> str | None:
     """Python equivalent of ``scanner_case_sql`` (used by tests)."""
+    if any(re.search(p, target) for p in SCANNER_EXEMPT_PATTERNS.values()):
+        return None
     for name, pattern in SCANNER_PATH_PATTERNS.items():
         if re.search(pattern, target):
             return name

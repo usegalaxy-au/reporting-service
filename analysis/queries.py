@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_MEMORY_LIMIT = '6GB'
 # An IP is "baseline" (known genuine) with this many good-signal requests.
 MIN_BASELINE_GOOD_REQUESTS = 20
+# ...and at most this share of malicious requests. Over months a scanner
+# easily collects 20 "good" requests, so the share matters too.
+MAX_BASELINE_MALICIOUS_FRACTION = 0.1
 # Ranges need this many malicious requests to be listed at all.
 MIN_RANGE_MALICIOUS = 20
 # Share of a range's requests that must be malicious to call it spam-only.
@@ -82,7 +85,9 @@ class Analysis:
                 sum(is_monitor::INT) AS monitor,
                 sum((ua_empty)::INT) AS empty_ua,
                 min(ts) AS first_seen, max(ts) AS last_seen,
-                (sum({GOOD_SQL}::INT) >= {MIN_BASELINE_GOOD_REQUESTS}
+                ((sum({GOOD_SQL}::INT) >= {MIN_BASELINE_GOOD_REQUESTS}
+                  AND sum({MALICIOUS_SQL}::INT)
+                      <= {MAX_BASELINE_MALICIOUS_FRACTION} * count(*))
                  OR sum(is_monitor::INT) > 0) AS is_baseline
             FROM traffic GROUP BY ip
         """)
