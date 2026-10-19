@@ -38,7 +38,8 @@ SCANNER_PATH_PATTERNS = {
         r'|\.s3cfg|docker-compose\.ya?ml|dockerfile'
         r'|(gcp-key|key|sa|auth)\.json|config\.env|appsettings[^/?]*\.json'
         r'|_environment)($|\?)'),
-    'misc_probe': r'(?i)^/(containers/json|ipfs/|ip($|\?))',
+    # /ip is deliberately absent: 34 genuine IPs requested it in 3 months.
+    'misc_probe': r'(?i)^/(containers/json|ipfs/)',
     'archive_probe': (
         r'(?i)^/[^/?]*\.(sql|bak|old|zip|tar|tar\.gz|tgz|rar|7z)($|\?)'),
 }
@@ -76,7 +77,7 @@ SCANNER_DESCRIPTIONS = {
         'keys and credentials (id_rsa, *.pem, terraform.tfstate, '
         'service-account JSON, key.json, sa.json, config.env, '
         'appsettings.*.json, docker-compose.yaml)'),
-    'misc_probe': 'misc recon (/containers/json, /ipfs/, /ip)',
+    'misc_probe': 'misc recon (/containers/json, /ipfs/)',
     'archive_probe': 'backup/archive in the web root (/backup.zip, /db.sql)',
     'app_probe': (
         'generic web-app routes (/graphql, /dashboard, /.vite/manifest.json,'

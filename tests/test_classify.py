@@ -102,7 +102,7 @@ def _matches(regexes, line):
 
 @pytest.mark.parametrize('target', [
     '/x.php', '/a/wp-login.php?x=1', '/.env', '/api/smtp/smtp%2ejson',
-    '/backup.zip', '/ip',
+    '/backup.zip', '/containers/json',
 ])
 def test_generated_scan_regex_matches_scanner_lines(target):
     assert _matches(filters.scan_failregex(), _log_line(target))
@@ -112,6 +112,7 @@ def test_generated_scan_regex_matches_scanner_lines(target):
     _log_line('/api/histories', 200),
     _log_line('/.well-known/passkey-endpoints'),
     _log_line('/ipython'),
+    _log_line('/ip'),
     _log_line('/static/a.js', 200, 'Mozilla/5.0 x.php'),
     '198.51.100.7 - - [03/Aug/2026:23:00:03 +0000] "GET /static/a.js '
     'HTTP/1.1" 200 0 "http://x/a.php" "-"',
