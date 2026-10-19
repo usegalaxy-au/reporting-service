@@ -73,8 +73,8 @@ def target_regex(pattern: str, status: str = r'\d{3}') -> str:
     body = scoped_flags(pattern).replace('$', ' ')
     if body.startswith('(?i:^/') or body.startswith('^/'):
         # Anchored at the start of the target.
-        return f'{LINE_START}{body.replace("^/", "/", 1)}.*" {status} '
-    return f'{LINE_START}\\S*{body}.*" {status} '
+        return f'{LINE_START}{body.replace("^/", "/", 1)}.*" {status}'
+    return f'{LINE_START}\\S*{body}.*" {status}'
 
 
 def scan_failregex() -> list[str]:
@@ -151,7 +151,9 @@ def render_filter(
     def block(key: str, regexes: list[str]) -> str:
         if not regexes:
             return f'{key} =\n'
-        joined = '\n            '.join(regexes)
+        # fail2ban reads config with %-interpolation, so a literal % (as
+        # in the URL-encoded %2e patterns) must be written as %%.
+        joined = '\n            '.join(r.replace('%', '%%') for r in regexes)
         return f'{key} = {joined}\n'
 
     about = _comment(description) + '#\n' if description else ''
@@ -207,8 +209,13 @@ def stale_files(out_dir: Path = FAIL2BAN_DIR) -> list[Path]:
 
 
 def load_filter(path: Path) -> tuple[list[str], list[str]]:
-    """Read failregex/ignoreregex back from a filter .conf file."""
-    parser = configparser.RawConfigParser()
+    """Read failregex/ignoreregex back from a filter .conf file.
+
+    Uses %-interpolation exactly like fail2ban, so a filter that fail2ban
+    can't load fails here too (and %% decodes back to %).
+    """
+    parser = configparser.ConfigParser(
+        interpolation=configparser.BasicInterpolation())
     parser.read(path)
     section = parser['Definition']
 

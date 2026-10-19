@@ -154,3 +154,13 @@ def test_scan_filter_comment_lists_patterns_in_regex_order():
     positions = [comment.index(f' {n} ') for n in names]
     assert positions == sorted(positions)
     assert len(names) == body.count('<HOST>')
+
+
+def test_rendered_filters_load_with_fail2ban_interpolation(tmp_path):
+    # fail2ban treats % as interpolation; the URL-encoded patterns must be
+    # escaped as %% and decode back to the exact regexes.
+    for name, (fail, ignore) in filters.definitions().items():
+        path = tmp_path / f'{name}.conf'
+        path.write_text(filters.render_filter(fail, ignore))
+        assert filters.load_filter(path) == (fail, ignore), name
+    assert any('%' in r for r in filters.scan_failregex())
