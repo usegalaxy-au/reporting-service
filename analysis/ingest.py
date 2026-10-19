@@ -88,7 +88,10 @@ def _api_scanner_sql() -> str:
     """Final two columns: api_kind and scanner_match.
 
     api_kind ignores the 4xx-only patterns: a legit route stays legit
-    whatever it returns.
+    whatever it returns. An /api path missing from GALAXY_API_PREFIXES is
+    labelled 'bogus_api' but is NOT a scanner match: the prefix list goes
+    stale with Galaxy releases (e.g. /api/events), so only real scanner
+    signatures may count as malicious.
     """
     q = classify._sql_quote
     scan = classify.scanner_case_sql('target')
@@ -103,10 +106,8 @@ def _api_scanner_sql() -> str:
             ELSE {q(classify.BOGUS_API_NAME)}
         END AS api_kind,
         coalesce(({scan_4xx}),
-            CASE WHEN method IS NULL THEN {q(classify.MALFORMED_NAME)}
-                 WHEN regexp_matches(path, {q(classify.API_PREFIX_RE)})
-                      AND NOT regexp_matches(path, {q(classify.GALAXY_API_RE)})
-                 THEN {q(classify.BOGUS_API_NAME)} END) AS scanner_match
+            CASE WHEN method IS NULL THEN {q(classify.MALFORMED_NAME)} END)
+            AS scanner_match
     """
 
 

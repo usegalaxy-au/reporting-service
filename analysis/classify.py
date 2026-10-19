@@ -79,7 +79,9 @@ SCANNER_DESCRIPTIONS = {
 BOGUS_API_NAME = 'bogus_api'
 MALFORMED_NAME = 'malformed'
 
-# First path segment(s) after /api/ that real Galaxy serves.
+# First path segment(s) after /api/ that real Galaxy serves. Used only to
+# label traffic as genuine API use in reports: it goes stale with Galaxy
+# releases, so nothing malicious or ban-worthy may depend on it.
 GALAXY_API_PREFIXES = (
     'authenticate', 'cloud', 'configuration', 'container_resolvers',
     'dataset_collection_element', 'dataset_collections', 'datasets',
@@ -97,6 +99,7 @@ GALAXY_API_PREFIXES = (
     'drs_download', 'oidc', 'citations', 'history_contents', 'lint',
     'tasks', 'proxy', 'file_source_templates', 'file_source_instances',
     'object_store_templates', 'trs_consume', 'trs_search', 'exports', 'docs',
+    'events',
 )
 GALAXY_API_RE = r'^/api/(' + '|'.join(GALAXY_API_PREFIXES) + r')($|[/?])'
 API_PREFIX_RE = r'^/api(/|$)'
