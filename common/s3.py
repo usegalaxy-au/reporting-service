@@ -14,10 +14,18 @@ from datetime import date, timedelta
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
 
 DATE_PATH_LENGTH = 10  # length of YYYY/MM/DD
+# Bulk deletes of 1000 keys time out on the Nectar object store.
+DELETE_BATCH_SIZE = 200
+DELETE_PROGRESS_EVERY = 50  # batches
+# Give up rather than hammer an object store that is down.
+DELETE_MAX_CONSECUTIVE_FAILURES = 10
+CLIENT_READ_TIMEOUT = 300  # seconds
+CLIENT_MAX_ATTEMPTS = 5
 
 
 class S3Storage:
@@ -53,7 +61,14 @@ class S3Storage:
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
                 region_name=self.region,
-                config=Config(signature_version='s3v4'),
+                config=Config(
+                    signature_version='s3v4',
+                    read_timeout=CLIENT_READ_TIMEOUT,
+                    retries={
+                        'max_attempts': CLIENT_MAX_ATTEMPTS,
+                        'mode': 'standard',
+                    },
+                ),
             )
         return self._client
 
@@ -66,15 +81,61 @@ class S3Storage:
             objects.extend(page.get('Contents', []))
         return objects
 
-    def delete_objects(self, keys: list[str]):
-        """Delete a batch of S3 objects (max 1000 per request)."""
+    def delete_objects(
+        self,
+        keys: list[str],
+        batch_size: int = DELETE_BATCH_SIZE,
+    ) -> tuple[int, int]:
+        """Delete S3 objects in batches; return (deleted, failed) counts.
+
+        A failing batch is logged and skipped so one timeout doesn't
+        abort the whole run. After DELETE_MAX_CONSECUTIVE_FAILURES failed
+        batches in a row the remaining keys are counted as failed.
+        """
         client = self._get_client()
-        for i in range(0, len(keys), 1000):
-            batch = [{'Key': k} for k in keys[i:i + 1000]]
-            client.delete_objects(
-                Bucket=self.bucket,
-                Delete={'Objects': batch},
-            )
+        starts = range(0, len(keys), batch_size)
+        deleted = failed = consecutive_failures = 0
+
+        for n, start in enumerate(starts, 1):
+            batch = keys[start:start + batch_size]
+            try:
+                response = client.delete_objects(
+                    Bucket=self.bucket,
+                    Delete={
+                        'Objects': [{'Key': k} for k in batch],
+                        'Quiet': True,
+                    },
+                )
+            except (BotoCoreError, ClientError) as e:
+                logger.error(
+                    "Batch %d/%d failed (%d keys from %s): %s",
+                    n, len(starts), len(batch), batch[0], e)
+                failed += len(batch)
+                consecutive_failures += 1
+                if consecutive_failures >= DELETE_MAX_CONSECUTIVE_FAILURES:
+                    remaining = len(keys) - start - len(batch)
+                    logger.error(
+                        "Giving up after %d consecutive failed batches; "
+                        "%d object(s) not attempted.",
+                        consecutive_failures, remaining)
+                    failed += remaining
+                    break
+                continue
+
+            consecutive_failures = 0
+            errors = response.get('Errors', [])
+            for error in errors:
+                logger.error(
+                    "Failed to delete %s: %s %s", error.get('Key'),
+                    error.get('Code'), error.get('Message'))
+            failed += len(errors)
+            deleted += len(batch) - len(errors)
+            if n % DELETE_PROGRESS_EVERY == 0 or n == len(starts):
+                logger.info(
+                    "Deleted %d/%d object(s), %d failed",
+                    deleted, len(keys), failed)
+
+        return deleted, failed
 
     def date_from_key(self, key: str) -> date:
         """Extract the log date from an S3 object key.
