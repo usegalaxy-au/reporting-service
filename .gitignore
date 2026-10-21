@@ -146,3 +146,6 @@ cython_debug/
 # OS
 .DS_Store
 Thumbs.db
+
+# Log analysis outputs
+analysis/output/
