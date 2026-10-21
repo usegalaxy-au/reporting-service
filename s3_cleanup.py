@@ -118,8 +118,11 @@ def main():
         return
 
     logger.info("Deleting %d object(s)...", len(to_delete))
-    s3.delete_objects(to_delete)
-    logger.info("Done.")
+    deleted, failed = s3.delete_objects(to_delete)
+    if failed:
+        logger.error("Done: %d deleted, %d failed.", deleted, failed)
+        sys.exit(1)
+    logger.info("Done: %d deleted.", deleted)
 
 
 if __name__ == '__main__':
